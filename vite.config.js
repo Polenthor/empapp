@@ -9,5 +9,6 @@ export default defineConfig({
       protocol: 'ws',
       host: 'localhost',
     },
+    base: process.env.VITE_BASE_PATH || "/react-vite-deploy",
   }
 })
