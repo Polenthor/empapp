@@ -2,153 +2,149 @@ import React, { useState } from 'react';
 import { 
   Button, 
   TextField, 
-  Paper, 
   Typography, 
   Box, 
   Container, 
-  InputAdornment, 
-  IconButton,
-  Alert
+  Paper,
+  Alert,
+  Stack
 } from '@mui/material';
-import { Visibility, VisibilityOff, LockOutlined } from '@mui/icons-material';
-import axios from 'axios';
+import { LockOutlined } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
+
+// 1. IMPORT YOUR CENTRALIZED API INSTANCE
+import api from '../api/axios'; 
 
 const Login = () => {
   const [user, setUser] = useState({ Username: "", Password: "" });
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const inputHandler = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
-    if (error) setError(""); // Clear error when user types
+    if (error) setError(""); 
   };
 
-  const loginHandler = (e) => {
-    // Prevent page reload if called from a form
-    if(e) e.preventDefault();
+  const loginHandler = async (e) => {
+    console.log("Sending to backend:", user);
+    if (e) e.preventDefault(); // Prevents page reload if wrapped in a form
 
     if (!user.Username || !user.Password) {
       setError("Please enter both username and password.");
       return;
     }
 
-    axios.get("http://localhost:3000/view")
-      .then((res) => {
-        const foundUser = res.data.find(
-          (u) => u.Username === user.Username && u.Password === user.Password
-        );
+    setLoading(true);
 
-        if (foundUser) {
-          localStorage.setItem("loggedUser", JSON.stringify(foundUser));
-          navigate('/imgd');
-        } else {
-          setError("Invalid username or password.");
-        }
+    // 2. USE THE 'api' INSTANCE 
+    // Recommended: Use a POST route for login for better security
+    api.post("/login", user)
+      .then((res) => {
+        // Store user info (token or user object) in localStorage
+        localStorage.setItem("loggedUser", JSON.stringify(res.data));
+        alert("Login successful!");
+        navigate('/imgd');
       })
       .catch((err) => {
         console.error("Login error:", err);
-        setError("Unable to connect to server. Please try again.");
+        const errMsg = err.response?.data?.message || "Invalid username or password.";
+        setError(errMsg);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
   return (
     <Box 
       sx={{ 
-        minHeight: '90vh', 
+        minHeight: '100vh', 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        background: 'linear-gradient(to bottom, #f5f5f5, #e0e0e0)' 
+        backgroundColor: '#fff',
+        py: 4
       }}
     >
       <Container maxWidth="xs">
         <Paper 
-          elevation={6} 
+          elevation={0} 
           sx={{ 
-            p: 4, 
+            p: 5, 
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center',
-            borderRadius: 3
+            borderRadius: 0,
+            border: '1px solid #eee'
           }}
         >
-          {/* Icon and Title */}
+          {/* Brand Icon */}
           <Box sx={{ bgcolor: 'black', p: 1.5, borderRadius: '50%', mb: 2 }}>
             <LockOutlined sx={{ color: 'white' }} />
           </Box>
           
-          <Typography variant="h4" fontWeight="800" gutterBottom>
-            Welcome Back
+          <Typography variant="h4" fontWeight="900" sx={{ letterSpacing: 1, mb: 1 }}>
+            MODARC LOGIN
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Please enter your details to sign in.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 5, textAlign: 'center' }}>
+            Enter your credentials to access the dashboard.
           </Typography>
 
-          {/* Error Message */}
           {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+            <Alert severity="error" sx={{ width: '100%', mb: 3, borderRadius: 0 }}>
               {error}
             </Alert>
           )}
 
-          {/* Form */}
           <Box component="form" onSubmit={loginHandler} sx={{ width: '100%' }}>
-            <TextField
-              fullWidth
-              label="Username"
-              name="Username"
-              variant="outlined"
-              margin="normal"
-              value={user.Username}
-              onChange={inputHandler}
-              autoComplete="username"
-            />
-            
-            <TextField
-              fullWidth
-              label="Password"
-              name="Password"
-              type={showPassword ? 'text' : 'password'}
-              variant="outlined"
-              margin="normal"
-              value={user.Password}
-              onChange={inputHandler}
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Username"
+                name="Username"
+                variant="standard"
+                value={user.Username}
+                onChange={inputHandler}
+                autoComplete="username"
+              />
+              
+              <TextField
+                fullWidth
+                label="Password"
+                name="Password"
+                type="password"
+                variant="standard"
+                value={user.Password}
+                onChange={inputHandler}
+                autoComplete="current-password"
+              />
+            </Stack>
 
             <Button
               fullWidth
               type="submit"
               variant="contained"
-              size="large"
+              disabled={loading}
               sx={{ 
-                mt: 3, 
+                mt: 6, 
                 mb: 2, 
                 bgcolor: 'black', 
                 py: 1.5,
+                borderRadius: 0,
                 fontWeight: 'bold',
+                letterSpacing: 1,
                 '&:hover': { bgcolor: '#333' } 
               }}
             >
-              Sign In
+              {loading ? "VERIFYING..." : "SIGN IN"}
             </Button>
             
             <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Typography variant="body2">
-                Don't have an account?{' '}
-                <Link to="/signup" style={{ color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>
-                  Sign Up
+              <Typography variant="body2" color="text.secondary">
+                New to Modarc?{' '}
+                <Link to="/signup" style={{ color: 'black', fontWeight: '900', textDecoration: 'underline' }}>
+                  CREATE ACCOUNT
                 </Link>
               </Typography>
             </Box>

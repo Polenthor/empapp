@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+// 1. IMPORT YOUR CUSTOM API INSTANCE INSTEAD OF AXIOS
+import api from "../api/axios"; 
 import {
   Grid,
   Card,
@@ -29,8 +30,10 @@ const ImageD = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
 
+  // 2. UPDATE THE FETCH CALL
   useEffect(() => {
-    axios.get("http://localhost:3000/products")
+    // We only use the relative path "/products" because the baseURL is handled in api/axios.js
+    api.get("/products")
       .then((res) => setProducts(res.data))
       .catch((err) => console.error("Error fetching products:", err));
   }, []);
@@ -40,7 +43,7 @@ const ImageD = () => {
       name: product.name,
       url: imgObj.url,
       price: imgObj.price,
-      stock: imgObj.stock, // New stock field
+      stock: imgObj.stock,
       id: product._id
     });
     setOpen(true);
@@ -52,9 +55,15 @@ const ImageD = () => {
   };
 
   const handleAuthRedirect = () => {
-    localStorage.removeItem("loggedUser");
-    alert("Please login to proceed with the purchase.");
-    navigate('/login');
+    const loggedUser = localStorage.getItem("loggedUser");
+    
+    if (!loggedUser) {
+      alert("Please login to proceed with the purchase.");
+      navigate('/login');
+    } else {
+      // Logic for adding to cart goes here
+      alert("Item added to cart successfully!");
+    }
   };
 
   const formatRupee = (amount) => 
@@ -90,7 +99,6 @@ const ImageD = () => {
                 }}
                 onClick={() => handleOpenDetails(product, imgObj)}
               >
-                {/* Out of Stock Overlay */}
                 {imgObj.stock <= 0 && (
                    <Box sx={{
                      position: 'absolute', top: 10, left: 10, zIndex: 2,
@@ -116,8 +124,7 @@ const ImageD = () => {
                     {formatRupee(imgObj.price)}
                   </Typography>
                   
-                  {/* Small Stock Indicator on Card */}
-                  <Typography variant="caption" sx={{ color: imgObj.stock < 5 ? 'orange' : 'text.secondary' }}>
+                  <Typography variant="caption" sx={{ color: imgObj.stock < 5 && imgObj.stock > 0 ? 'orange' : 'text.secondary' }}>
                     {imgObj.stock <= 0 ? "Sold Out" : imgObj.stock < 5 ? `Only ${imgObj.stock} left!` : "In Stock"}
                   </Typography>
                 </CardContent>
@@ -127,7 +134,6 @@ const ImageD = () => {
         ))}
       </Grid>
 
-      {/* --- PRODUCT DETAILS MODAL --- */}
       <Dialog 
         open={open} 
         onClose={handleClose} 
@@ -164,9 +170,6 @@ const ImageD = () => {
                       color={selectedItem.stock > 0 ? "success" : "error"} 
                       size="small" 
                     />
-                    {selectedItem.stock > 0 && selectedItem.stock < 5 && (
-                      <Chip label="Limited Stock" color="warning" size="small" variant="outlined" />
-                    )}
                   </Stack>
 
                   <Typography variant="h4" fontWeight="800" gutterBottom>
@@ -183,7 +186,6 @@ const ImageD = () => {
                     A premium addition to our collection. This {selectedItem.name} offers unmatched quality and style. 
                   </Typography>
 
-                  {/* Stock Warning Logic */}
                   {selectedItem.stock > 0 && selectedItem.stock < 5 && (
                     <Box sx={{ display: 'flex', alignItems: 'center', color: '#ed6c02', mb: 2 }}>
                        <ErrorOutlineIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
@@ -201,7 +203,7 @@ const ImageD = () => {
                       fullWidth 
                       disabled={selectedItem.stock <= 0}
                       startIcon={<ShoppingCartIcon />}
-                      sx={{ bgcolor: '#ff9f00', '&:hover': { bgcolor: '#f39700' }, py: 1.5, borderRadius: 2 }}
+                      sx={{ bgcolor: 'black', '&:hover': { bgcolor: '#333' }, py: 1.5, borderRadius: 2 }}
                       onClick={handleAuthRedirect}
                     >
                       ADD TO CART

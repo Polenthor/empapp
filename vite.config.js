@@ -5,9 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: true, // Allows the localtunnel URL
     hmr: {
-      clientPort: 443, // Forces HMR to use the secure tunnel port
+      protocol: 'ws',
+      host: 'localhost',
     },
   }
 })

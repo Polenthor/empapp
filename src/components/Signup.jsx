@@ -10,17 +10,19 @@ import {
   Grid
 } from '@mui/material';
 import { PersonAddOutlined } from '@mui/icons-material';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+
+// 1. IMPORT YOUR CUSTOM API INSTANCE
+import api from '../api/axios'; 
 
 const Signup = () => {
   const [user, setUser] = useState({
     Username: "",
     Password: "",
     Re_enterpassword: "",
-    
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // Added loading state
   const navigate = useNavigate();
 
   const inputHandler = (e) => {
@@ -41,68 +43,77 @@ const Signup = () => {
       return;
     }
 
-    axios.post("http://localhost:3000/signup", user)
+    setLoading(true);
+
+    // 2. USE THE 'api' INSTANCE INSTEAD OF AXIOS
+    api.post("/signup", user)
       .then((res) => {
-        alert("Signup successful!");
-        navigate('/login'); // Usually best to redirect to login after signup
+        alert("Signup successful! Please log in.");
+        navigate('/login'); 
       })
       .catch((err) => {
         console.error("Signup error:", err);
-        setError("Signup failed. Username might already be taken.");
+        // Handling the error message more gracefully
+        const errMsg = err.response?.data?.message || "Signup failed. Username might be taken.";
+        setError(errMsg);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
   return (
     <Box 
       sx={{ 
-        minHeight: '95vh', 
+        minHeight: '100vh', 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        background: 'linear-gradient(to bottom, #f5f5f5, #e0e0e0)',
+        backgroundColor: '#fff', // Switched to clean white to match Home/ImageD
         py: 4
       }}
     >
       <Container maxWidth="xs">
         <Paper 
-          elevation={6} 
+          elevation={0} // Flat, modern look
           sx={{ 
             p: 4, 
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center',
-            borderRadius: 3
+            borderRadius: 0, // Sharp edges for premium feel
+            border: '1px solid #eee' // Subtle border instead of heavy shadow
           }}
         >
-          {/* Signup Icon */}
+          {/* Brand Icon */}
           <Box sx={{ bgcolor: 'black', p: 1.5, borderRadius: '50%', mb: 2 }}>
             <PersonAddOutlined sx={{ color: 'white' }} />
           </Box>
           
-          <Typography variant="h4" fontWeight="800" gutterBottom>
-            Create Account
+          <Typography variant="h4" fontWeight="900" sx={{ letterSpacing: 1, mb: 1 }}>
+            JOIN MODARC
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Join Modarc to start your premium experience.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+            Enter your details to create a premium account.
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+            <Alert severity="error" sx={{ width: '100%', mb: 3, borderRadius: 0 }}>
               {error}
             </Alert>
           )}
 
           <Box component="form" onSubmit={addHandler} sx={{ width: '100%' }}>
-            <Grid container spacing={1}>
+            <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Username"
                   name="Username"
-                  variant="outlined"
+                  variant="standard" // Standard looks more "Fashion Brand" than Outlined
                   value={user.Username}
                   onChange={inputHandler}
-                  margin="dense"
+                  autoComplete="username"
                 />
               </Grid>
               
@@ -112,28 +123,26 @@ const Signup = () => {
                   label="Password"
                   name="Password"
                   type="password"
-                  variant="outlined"
+                  variant="standard"
                   value={user.Password}
                   onChange={inputHandler}
-                  margin="dense"
+                  autoComplete="new-password"
+                  sx={{ mt: 1 }}
                 />
               </Grid>
 
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Re-enter Password"
+                  label="Confirm Password"
                   name="Re_enterpassword"
                   type="password"
-                  variant="outlined"
+                  variant="standard"
                   value={user.Re_enterpassword}
                   onChange={inputHandler}
-                  margin="dense"
+                  autoComplete="new-password"
+                  sx={{ mt: 1 }}
                 />
-              </Grid>
-
-              <Grid item xs={12}>
-                
               </Grid>
             </Grid>
 
@@ -141,24 +150,26 @@ const Signup = () => {
               fullWidth
               type="submit"
               variant="contained"
-              size="large"
+              disabled={loading}
               sx={{ 
-                mt: 4, 
+                mt: 6, 
                 mb: 2, 
                 bgcolor: 'black', 
                 py: 1.5,
+                borderRadius: 0,
                 fontWeight: 'bold',
+                letterSpacing: 1,
                 '&:hover': { bgcolor: '#333' } 
               }}
             >
-              Sign Up
+              {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
             </Button>
             
-            <Box sx={{ textAlign: 'center', mt: 1 }}>
-              <Typography variant="body2">
-                Already have an account?{' '}
-                <Link to="/login" style={{ color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>
-                  Sign In
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Already a member?{' '}
+                <Link to="/login" style={{ color: 'black', fontWeight: '900', textDecoration: 'underline' }}>
+                  SIGN IN
                 </Link>
               </Typography>
             </Box>
