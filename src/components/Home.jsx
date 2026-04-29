@@ -28,8 +28,8 @@ const Home = () => {
         </Box>
 
         <Box sx={{ display: "flex", gap: 2 }}>
-          <span>👤</span>
-          <span>🛍️</span>
+           <span>👤</span>
+          <Link to ='/upload'><span>🛍️</span></Link>
         </Box>
       </Box>
 
