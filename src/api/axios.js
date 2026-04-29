@@ -1,8 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
+
+const API = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
-  // This uses your Vercel URL in production and localhost in development
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  baseURL: API,
+  withCredentials: true // optional (only if using cookies)
 });
 
 export default api;
