@@ -1,55 +1,109 @@
-import React from "react";
-import { Box, Typography, Button, Grid } from "@mui/material";
+import React, { useState } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  Menu,
+  MenuItem,
+  Grid
+} from "@mui/material";
+
+import MenuIcon from "@mui/icons-material/Menu";
 import logo from "/logo.png";
 import { Link } from "react-router-dom";
 
 const Home = () => {
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const openMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const closeMenu = () => {
+    setAnchorEl(null);
+  };
+
   return (
     <Box sx={{ backgroundColor: "#fff", color: "#000" }}>
-      
-      {/* Navbar */}
-      <Box sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        px: 5,
-        py: 2
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-          MODARC
-        </Typography>
 
-        <Box sx={{ display: "flex", gap: 3 }}>
-          <Button style={{color:"black"}}>Home</Button>
-          <Button style={{color:"black"}}>Collection</Button>
-          <Button style={{color:"black"}}>About Us</Button>
-          <Button style={{color:"black"}}>Categories</Button>
-          <Button style={{color:"black"}}>Contact</Button>
+      {/* ================= NAVBAR ================= */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          px: 5,
+          py: 2
+        }}
+      >
+
+        {/* LEFT: MENU BUTTON */}
+        <Box>
+          
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={closeMenu}
+          >
+            <MenuItem onClick={closeMenu}>
+              <Link to="/" style={{ textDecoration: "none", color: "black" }}>
+                Home
+              </Link>
+            </MenuItem>
+
+            <MenuItem onClick={closeMenu}>
+              <Link to="/collection" style={{ textDecoration: "none", color: "black" }}>
+                Collection
+              </Link>
+            </MenuItem>
+
+            <MenuItem onClick={closeMenu}>
+              <Link to="/about" style={{ textDecoration: "none", color: "black" }}>
+                About Us
+              </Link>
+            </MenuItem>
+
+            <MenuItem onClick={closeMenu}>
+              <Link to="/categories" style={{ textDecoration: "none", color: "black" }}>
+                Categories
+              </Link>
+            </MenuItem>
+
+            <MenuItem onClick={closeMenu}>
+              <Link to="/contact" style={{ textDecoration: "none", color: "black" }}>
+                Contact
+              </Link>
+            </MenuItem>
+          </Menu>
         </Box>
 
+        {/* CENTER: LOGO / TITLE */}
+     
+        {/* RIGHT: ICONS */}
         <Box sx={{ display: "flex", gap: 2 }}>
-           <span>👤</span>
-          <Link to ='/upload'><span>🛍️</span></Link>
+          <span style={{ cursor: "pointer" }}>👤</span>
+
+          <Link to="/upload" style={{ textDecoration: "none" }}>
+            <span style={{ cursor: "pointer" }}>🛍️</span>
+          </Link>
         </Box>
+
       </Box>
 
-      {/* Hero Section */}
-      <Box sx={{
-        textAlign: "center",
-        mt: 10,
-        px: 2
-      }}>
+      {/* ================= HERO ================= */}
+      <Box sx={{ textAlign: "center", mt: 10, px: 2 }}>
 
- <img
-        src={logo}
-        alt="logo"
-        style={{ width: '150px', borderRadius: '10%' }}
-      /><br /><br />
-        
+        <img
+          src={logo}
+          alt="logo"
+          style={{ width: "150px", borderRadius: "10%" }}
+        />
+        <br /><br />
+
         <Typography sx={{ letterSpacing: 3, fontSize: 14 }}>
           STYLE THAT SPEAKS
         </Typography>
-
 
         <Typography
           sx={{
@@ -71,7 +125,7 @@ const Home = () => {
           bold identity, and everyday comfort.
         </Typography>
 
-        {/* Buttons */}
+        {/* BUTTONS */}
         <Box sx={{ mt: 4, display: "flex", justifyContent: "center", gap: 2 }}>
           <Button
             variant="contained"
@@ -85,25 +139,24 @@ const Home = () => {
             EXPLORE COLLECTION
           </Button>
 
-          <Link to ='/imgd'>
-          <Button
-            variant="outlined"
-            sx={{
-              borderColor: "#000",
-              color: "#000",
-              px: 4,
-              py: 1.5
-            }}
-          >
-            SHOP NOW
-          </Button></Link>
-          
+          <Link to="/imgd" style={{ textDecoration: "none" }}>
+            <Button
+              variant="outlined"
+              sx={{
+                borderColor: "#000",
+                color: "#000",
+                px: 4,
+                py: 1.5
+              }}
+            >
+              SHOP NOW
+            </Button>
+          </Link>
         </Box>
       </Box>
 
-      {/* Features Section */}
+      {/* ================= FEATURES ================= */}
       <Grid container spacing={4} sx={{ mt: 10, px: 5 }}>
-        
         <Grid item xs={12} md={4} textAlign="center">
           <Typography fontSize={40}>👕</Typography>
           <Typography fontWeight="bold">PREMIUM QUALITY</Typography>
@@ -127,10 +180,9 @@ const Home = () => {
             Durable clothing made for everyday life.
           </Typography>
         </Grid>
-
       </Grid>
 
-      {/* New Arrivals */}
+      {/* ================= NEW ARRIVALS ================= */}
       <Box sx={{ textAlign: "center", mt: 10, mb: 10 }}>
         <Typography sx={{ letterSpacing: 3 }}>
           — NEW ARRIVALS —
