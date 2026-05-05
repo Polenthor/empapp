@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/axios"; 
+import api from "../api/axios";
 import {
   Grid,
   Card,
@@ -17,10 +17,10 @@ import {
   Divider,
   Stack
 } from "@mui/material";
+
 import CloseIcon from "@mui/icons-material/Close";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { useNavigate } from "react-router-dom";
 
 const ImageD = () => {
@@ -29,24 +29,20 @@ const ImageD = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
 
-  // ✅ FIXED: Safe API handling
+  // ✅ FETCH PRODUCTS
   useEffect(() => {
     api.get("/products")
       .then((res) => {
-        console.log("API DATA:", res.data);
-
         if (Array.isArray(res.data)) {
           setProducts(res.data);
         } else {
           setProducts([]);
         }
       })
-      .catch((err) => {
-        console.error("Error fetching products:", err);
-        setProducts([]);
-      });
+      .catch((err) => console.error("Error fetching products:", err));
   }, []);
 
+  // ✅ OPEN MODAL
   const handleOpenDetails = (product, imgObj) => {
     setSelectedItem({
       name: product.name,
@@ -63,12 +59,12 @@ const ImageD = () => {
     setSelectedItem(null);
   };
 
-  // ✅ CART WORKING
-  const handleAuthRedirect = async () => {
+  // ✅ ADD TO CART
+  const handleAddToCart = async () => {
     const loggedUser = JSON.parse(localStorage.getItem("loggedUser"));
 
     if (!loggedUser) {
-      alert("Please login to proceed with the purchase.");
+      alert("Login required");
       navigate("/login");
       return;
     }
@@ -84,87 +80,101 @@ const ImageD = () => {
         }
       });
 
-      alert("Item added to cart successfully!");
+      alert("Added to cart ✅");
     } catch (err) {
-      console.error("Cart error:", err);
-      alert("Failed to add to cart");
+      console.error(err);
+      alert("Cart failed");
     }
   };
 
+  // ✅ RAZORPAY PAYMENT
+  const handlePayment = async () => {
+    const loggedUser = JSON.parse(localStorage.getItem("loggedUser"));
+
+    if (!loggedUser) {
+      alert("Login required");
+      navigate("/login");
+      return;
+    }
+
+    const amount = selectedItem.price;
+
+    try {
+      // 1️⃣ Create order
+      const { data: order } = await api.post("/payment/create-order", {
+        amount
+      });
+
+      // 2️⃣ Razorpay options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY,
+        amount: order.amount,
+        currency: "INR",
+        name: "MODARC",
+        description: selectedItem.name,
+        order_id: order.id,
+
+        handler: async function (response) {
+          try {
+            await api.post("/payment/verify", {
+              ...response,
+              userId: loggedUser._id,
+              products: [selectedItem],
+              amount
+            });
+
+            alert("Payment Successful 🎉");
+          } catch (err) {
+            console.error(err);
+            alert("Verification failed");
+          }
+        },
+
+        prefill: {
+          name: loggedUser.Username
+        },
+
+        theme: {
+          color: "#000"
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed");
+    }
+  };
+
+  // ✅ FORMAT PRICE
   const formatRupee = (amount) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
+      currency: "INR"
     }).format(amount || 0);
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography variant="h3" align="center" fontWeight="800" sx={{ mb: 6 }}>
+      <Typography variant="h4" align="center" sx={{ mb: 5 }}>
         Store Gallery
       </Typography>
 
-      {/* ✅ FIXED GRID */}
-      <Grid container spacing={4}>
+      <Grid container spacing={3}>
         {products.map((product) =>
-          product.image?.map((imgObj, index) => (
-            <Grid key={`${product._id}-${index}`} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-              <Card
-                sx={{
-                  height: "100%",
-                  borderRadius: 4,
-                  transition: "0.3s",
-                  "&:hover": {
-                    transform: "translateY(-8px)",
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-                    cursor: "pointer",
-                  },
-                }}
-                onClick={() => handleOpenDetails(product, imgObj)}
-              >
-                {imgObj.stock <= 0 && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 10,
-                      left: 10,
-                      bgcolor: "red",
-                      color: "#fff",
-                      px: 1,
-                      borderRadius: 1,
-                      fontSize: 12,
-                    }}
-                  >
-                    OUT OF STOCK
-                  </Box>
-                )}
-
+          product.image.map((img, index) => (
+            <Grid key={index}>
+              <Card onClick={() => handleOpenDetails(product, img)}>
                 <CardMedia
                   component="img"
-                  sx={{
-                    height: 240,
-                    objectFit: "cover",
-                    opacity: imgObj.stock <= 0 ? 0.5 : 1,
-                  }}
-                  image={imgObj.url}
-                  alt={product.name}
+                  height="200"
+                  image={img.url}
                 />
-
-                <CardContent sx={{ textAlign: "center" }}>
-                  <Typography variant="h6" noWrap>
-                    {product.name}
-                  </Typography>
-
-                  <Typography variant="h5" color="green">
-                    {formatRupee(imgObj.price)}
-                  </Typography>
-
-                  <Typography variant="caption">
-                    {imgObj.stock <= 0
-                      ? "Sold Out"
-                      : imgObj.stock < 5
-                      ? `Only ${imgObj.stock} left!`
-                      : "In Stock"}
+                <CardContent>
+                  <Typography>{product.name}</Typography>
+                  <Typography color="green">
+                    {formatRupee(img.price)}
                   </Typography>
                 </CardContent>
               </Card>
@@ -173,7 +183,7 @@ const ImageD = () => {
         )}
       </Grid>
 
-      {/* ✅ MODAL */}
+      {/* MODAL */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
         {selectedItem && (
           <>
@@ -185,44 +195,43 @@ const ImageD = () => {
 
             <DialogContent>
               <Grid container spacing={4}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid>
                   <img
                     src={selectedItem.url}
-                    alt={selectedItem.name}
-                    style={{ width: "100%", borderRadius: "10px" }}
+                    alt=""
+                    style={{ width: "100%" }}
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="h4">{selectedItem.name}</Typography>
+                <Grid>
+                  <Typography variant="h5">
+                    {selectedItem.name}
+                  </Typography>
 
-                  <Typography variant="h5" color="green" sx={{ mt: 2 }}>
+                  <Typography variant="h6" color="green">
                     {formatRupee(selectedItem.price)}
                   </Typography>
 
                   <Divider sx={{ my: 2 }} />
 
-                  <Box sx={{ display: "flex", gap: 2 }}>
+                  <Stack direction="row" spacing={2}>
                     <Button
-                      fullWidth
                       variant="contained"
                       startIcon={<ShoppingCartIcon />}
-                      sx={{ bgcolor: "black" }}
-                      onClick={handleAuthRedirect}
+                      onClick={handleAddToCart}
                     >
-                      ADD TO CART
+                      Add to Cart
                     </Button>
 
                     <Button
-                      fullWidth
                       variant="contained"
                       startIcon={<FlashOnIcon />}
-                      sx={{ bgcolor: "orange" }}
-                      onClick={handleAuthRedirect}
+                      onClick={handlePayment}
+                      sx={{ backgroundColor: "#fb641b" }}
                     >
-                      BUY NOW
+                      Buy Now
                     </Button>
-                  </Box>
+                  </Stack>
                 </Grid>
               </Grid>
             </DialogContent>
