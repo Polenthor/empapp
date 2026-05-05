@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-// 1. IMPORT YOUR CUSTOM API INSTANCE INSTEAD OF AXIOS
 import api from "../api/axios"; 
 import {
   Grid,
@@ -30,12 +29,22 @@ const ImageD = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
 
-  // 2. UPDATE THE FETCH CALL
+  // ✅ FIXED: Safe API handling
   useEffect(() => {
-    // We only use the relative path "/products" because the baseURL is handled in api/axios.js
     api.get("/products")
-      .then((res) => setProducts(res.data))
-      .catch((err) => console.error("Error fetching products:", err));
+      .then((res) => {
+        console.log("API DATA:", res.data);
+
+        if (Array.isArray(res.data)) {
+          setProducts(res.data);
+        } else {
+          setProducts([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching products:", err);
+        setProducts([]);
+      });
   }, []);
 
   const handleOpenDetails = (product, imgObj) => {
@@ -54,169 +63,164 @@ const ImageD = () => {
     setSelectedItem(null);
   };
 
-  const handleAuthRedirect = () => {
-    const loggedUser = localStorage.getItem("loggedUser");
-    
+  // ✅ CART WORKING
+  const handleAuthRedirect = async () => {
+    const loggedUser = JSON.parse(localStorage.getItem("loggedUser"));
+
     if (!loggedUser) {
       alert("Please login to proceed with the purchase.");
-      navigate('/login');
-    } else {
-      // Logic for adding to cart goes here
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await api.post("/cart/add", {
+        userId: loggedUser._id,
+        product: {
+          productId: selectedItem.id,
+          name: selectedItem.name,
+          price: selectedItem.price,
+          image: selectedItem.url
+        }
+      });
+
       alert("Item added to cart successfully!");
+    } catch (err) {
+      console.error("Cart error:", err);
+      alert("Failed to add to cart");
     }
   };
 
-  const formatRupee = (amount) => 
-    new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+  const formatRupee = (amount) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       maximumFractionDigits: 0,
     }).format(amount || 0);
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography variant="h3" align="center" fontWeight="800" sx={{ mb: 6, color: '#1a1a1a' }}>
+      <Typography variant="h3" align="center" fontWeight="800" sx={{ mb: 6 }}>
         Store Gallery
       </Typography>
 
+      {/* ✅ FIXED GRID */}
       <Grid container spacing={4}>
-        {products.map((product) => (
-          product.image.map((imgObj, index) => (
-            <Grid item key={`${product._id}-${index}`} xs={12} sm={6} md={4} lg={3}>
-              <Card 
-                sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  flexDirection: 'column',
+        {products.map((product) =>
+          product.image?.map((imgObj, index) => (
+            <Grid key={`${product._id}-${index}`} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Card
+                sx={{
+                  height: "100%",
                   borderRadius: 4,
-                  position: 'relative',
                   transition: "0.3s",
                   "&:hover": {
                     transform: "translateY(-8px)",
                     boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-                    cursor: 'pointer'
-                  }
+                    cursor: "pointer",
+                  },
                 }}
                 onClick={() => handleOpenDetails(product, imgObj)}
               >
                 {imgObj.stock <= 0 && (
-                   <Box sx={{
-                     position: 'absolute', top: 10, left: 10, zIndex: 2,
-                     bgcolor: 'rgba(255,0,0,0.8)', color: 'white',
-                     px: 1, borderRadius: 1, fontWeight: 'bold', fontSize: '0.75rem'
-                   }}>
-                     OUT OF STOCK
-                   </Box>
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 10,
+                      left: 10,
+                      bgcolor: "red",
+                      color: "#fff",
+                      px: 1,
+                      borderRadius: 1,
+                      fontSize: 12,
+                    }}
+                  >
+                    OUT OF STOCK
+                  </Box>
                 )}
 
                 <CardMedia
                   component="img"
-                  sx={{ height: 240, objectFit: "cover", opacity: imgObj.stock <= 0 ? 0.5 : 1 }}
+                  sx={{
+                    height: 240,
+                    objectFit: "cover",
+                    opacity: imgObj.stock <= 0 ? 0.5 : 1,
+                  }}
                   image={imgObj.url}
                   alt={product.name}
                 />
-                
-                <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
-                  <Typography variant="h6" fontWeight="600" noWrap>
+
+                <CardContent sx={{ textAlign: "center" }}>
+                  <Typography variant="h6" noWrap>
                     {product.name}
                   </Typography>
-                  <Typography variant="h5" fontWeight="700" color="success.main" sx={{ mt: 1 }}>
+
+                  <Typography variant="h5" color="green">
                     {formatRupee(imgObj.price)}
                   </Typography>
-                  
-                  <Typography variant="caption" sx={{ color: imgObj.stock < 5 && imgObj.stock > 0 ? 'orange' : 'text.secondary' }}>
-                    {imgObj.stock <= 0 ? "Sold Out" : imgObj.stock < 5 ? `Only ${imgObj.stock} left!` : "In Stock"}
+
+                  <Typography variant="caption">
+                    {imgObj.stock <= 0
+                      ? "Sold Out"
+                      : imgObj.stock < 5
+                      ? `Only ${imgObj.stock} left!`
+                      : "In Stock"}
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))
-        ))}
+        )}
       </Grid>
 
-      <Dialog 
-        open={open} 
-        onClose={handleClose} 
-        fullWidth 
-        maxWidth="md"
-        PaperProps={{ sx: { borderRadius: 4 } }}
-      >
+      {/* ✅ MODAL */}
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
         {selectedItem && (
           <>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
-              <IconButton onClick={handleClose}><CloseIcon /></IconButton>
+            <DialogTitle>
+              <IconButton onClick={handleClose}>
+                <CloseIcon />
+              </IconButton>
             </DialogTitle>
-            
-            <DialogContent sx={{ px: 4, pb: 4 }}>
-              <Grid container spacing={5}>
-                <Grid item xs={12} md={6}>
-                  <Box 
-                    component="img"
-                    src={selectedItem.url} 
-                    alt={selectedItem.name} 
-                    sx={{ 
-                      width: '100%', borderRadius: 4, 
-                      filter: selectedItem.stock <= 0 ? 'grayscale(100%)' : 'none',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                      aspectRatio: '1/1', objectFit: 'cover'
-                    }} 
+
+            <DialogContent>
+              <Grid container spacing={4}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <img
+                    src={selectedItem.url}
+                    alt={selectedItem.name}
+                    style={{ width: "100%", borderRadius: "10px" }}
                   />
                 </Grid>
-                
-                <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                    <Chip 
-                      label={selectedItem.stock > 0 ? "In Stock" : "Out of Stock"} 
-                      color={selectedItem.stock > 0 ? "success" : "error"} 
-                      size="small" 
-                    />
-                  </Stack>
 
-                  <Typography variant="h4" fontWeight="800" gutterBottom>
-                    {selectedItem.name}
-                  </Typography>
-                  
-                  <Typography variant="h3" fontWeight="700" color="success.main" sx={{ mb: 1 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="h4">{selectedItem.name}</Typography>
+
+                  <Typography variant="h5" color="green" sx={{ mt: 2 }}>
                     {formatRupee(selectedItem.price)}
                   </Typography>
 
                   <Divider sx={{ my: 2 }} />
-                  
-                  <Typography variant="body1" color="text.secondary" paragraph>
-                    A premium addition to our collection. This {selectedItem.name} offers unmatched quality and style. 
-                  </Typography>
 
-                  {selectedItem.stock > 0 && selectedItem.stock < 5 && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', color: '#ed6c02', mb: 2 }}>
-                       <ErrorOutlineIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-                       <Typography variant="body2" fontWeight="bold">
-                         Hurry! Only {selectedItem.stock} items left in stock.
-                       </Typography>
-                    </Box>
-                  )}
-
-                  <Box sx={{ flexGrow: 1 }} />
-
-                  <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-                    <Button 
-                      variant="contained" 
-                      fullWidth 
-                      disabled={selectedItem.stock <= 0}
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Button
+                      fullWidth
+                      variant="contained"
                       startIcon={<ShoppingCartIcon />}
-                      sx={{ bgcolor: 'black', '&:hover': { bgcolor: '#333' }, py: 1.5, borderRadius: 2 }}
+                      sx={{ bgcolor: "black" }}
                       onClick={handleAuthRedirect}
                     >
                       ADD TO CART
                     </Button>
-                    <Button 
-                      variant="contained" 
-                      fullWidth 
-                      disabled={selectedItem.stock <= 0}
+
+                    <Button
+                      fullWidth
+                      variant="contained"
                       startIcon={<FlashOnIcon />}
-                      sx={{ bgcolor: '#fb641b', '&:hover': { bgcolor: '#f4511e' }, py: 1.5, borderRadius: 2 }}
+                      sx={{ bgcolor: "orange" }}
                       onClick={handleAuthRedirect}
                     >
-                      {selectedItem.stock > 0 ? "BUY NOW" : "SOLD OUT"}
+                      BUY NOW
                     </Button>
                   </Box>
                 </Grid>

@@ -13,6 +13,7 @@ import Home from './components/Home'
 import ProtectedRoute from './components/ProtectedRoute'
 import Upload from './components/Upload'
 import ImageD from './components/ImageD'
+import Cart from './components/Cart'
 
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
         <Route path='/signup' element={<Signup />} />
         <Route path='/upload' element={<Upload />} />
         <Route path='/imgd' element={<ImageD />} />
+        <Route path="/cart" element={<Cart />} />
 
 
       </Routes>

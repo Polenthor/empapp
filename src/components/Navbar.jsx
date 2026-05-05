@@ -8,6 +8,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const loggedUser = JSON.parse(localStorage.getItem("loggedUser"));
+  const user = JSON.parse(localStorage.getItem("loggedUser"));
 
   const isJojoPage = location.pathname.startsWith("/jojo");
 
@@ -17,17 +18,17 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar 
-      position="sticky" 
-      sx={{ 
-        backgroundColor: 'rgba(0, 0, 0, 0.9)', 
+    <AppBar
+      position="sticky"
+      sx={{
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         backdropFilter: 'blur(8px)', // Modern glass effect
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)' 
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
       }}
     >
       <Container maxWidth="xl">
         <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 0 }}>
-          
+
           {/* BRAND LOGO */}
           <Typography
             variant="h5"
@@ -48,19 +49,19 @@ const Navbar = () => {
 
           {/* NAVIGATION LINKS */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            
+
             {isJojoPage && (
               <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-                <Button 
-                  component={Link} 
-                  to="/view" 
+                <Button
+                  component={Link}
+                  to="/view"
                   sx={{ color: 'white', fontWeight: 600 }}
                 >
                   View
                 </Button>
-                <Button 
-                  component={Link} 
-                  to="/add" 
+                <Button
+                  component={Link}
+                  to="/add"
                   sx={{ color: 'white', fontWeight: 600 }}
                 >
                   Add
@@ -70,18 +71,18 @@ const Navbar = () => {
 
             {!loggedUser ? (
               <>
-                <Button 
-                  component={Link} 
-                  to="/login" 
-                  variant="outlined" 
+                <Button
+                  component={Link}
+                  to="/login"
+                  variant="outlined"
                   sx={{ color: 'white', borderColor: 'white', borderRadius: 2 }}
                 >
                   Login
                 </Button>
-                <Button 
-                  component={Link} 
-                  to="/signup" 
-                  variant="contained" 
+                <Button
+                  component={Link}
+                  to="/signup"
+                  variant="contained"
                   sx={{ bgcolor: 'white', color: 'black', borderRadius: 2, '&:hover': { bgcolor: grey[300] } }}
                 >
                   Sign Up
@@ -89,22 +90,27 @@ const Navbar = () => {
               </>
             ) : (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Button 
-                  component={Link} 
-                  to="/profile" 
+                <Button
+                  component={Link}
+                  to="/profile"
                   sx={{ color: 'white', minWidth: 'auto', p: 1 }}
                 >
                   <Person />
                 </Button>
-                <Button 
-                  variant="contained" 
+                {user && (
+                  <Link to="/cart">
+                    <Button>Cart</Button>
+                  </Link>
+                )}
+                <Button
+                  variant="contained"
                   onClick={handleLogout}
                   startIcon={<Logout />}
-                  sx={{ 
-                    bgcolor: red[700], 
+                  sx={{
+                    bgcolor: red[700],
                     fontWeight: 'bold',
                     borderRadius: 2,
-                    '&:hover': { bgcolor: red[900] } 
+                    '&:hover': { bgcolor: red[900] }
                   }}
                 >
                   Logout
