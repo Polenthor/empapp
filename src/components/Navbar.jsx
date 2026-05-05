@@ -13,7 +13,8 @@ import {
 import {
   Person,
   Logout,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  ShoppingCartCheckout
 } from '@mui/icons-material';
 
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -175,7 +176,7 @@ const Navbar = () => {
 
                 {user && (
                   <Link to="/cart" style={{ textDecoration: "none" }}>
-                    <Button sx={{ color: "white" }}>
+                    <Button sx={{ color: "white" }} startIcon={ShoppingCartCheckout}>
                       Cart
                     </Button>
                   </Link>
