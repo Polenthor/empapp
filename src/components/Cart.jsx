@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/axios";
+import { useNavigate } from "react-router-dom";
+
 import {
   Box,
   Container,
@@ -24,11 +26,18 @@ const Cart = () => {
   const [cart, setCart] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch cart
+  const navigate = useNavigate();
+
+  // ================= FETCH CART =================
   const fetchCart = async () => {
     try {
-      const res = await api.get("/cart");
-      setCart(res.data);
+      const user = JSON.parse(localStorage.getItem("loggedUser"));
+
+      if (!user) return;
+
+      const res = await api.get(`/cart/${user._id}`);
+      setCart(res.data || { items: [] });
+
     } catch (err) {
       console.error("Cart fetch error:", err);
     } finally {
@@ -40,96 +49,94 @@ const Cart = () => {
     fetchCart();
   }, []);
 
-  // ✅ Increase quantity
-  const increaseQty = async (product) => {
-    await api.post("/cart/add", { product });
+  // ================= ADD ITEM =================
+  const increaseQty = async (item) => {
+    const user = JSON.parse(localStorage.getItem("loggedUser"));
+
+    await api.post("/cart/add", {
+      userId: user._id,
+      product: {
+        productId: item.productId,
+        name: item.name,
+        price: item.price,
+        image: item.image
+      }
+    });
+
     fetchCart();
-    window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  // ✅ Decrease quantity
-  const decreaseQty = async (productId) => {
-    await api.post("/cart/decrease", { productId });
-    fetchCart();
-    window.dispatchEvent(new Event("cartUpdated"));
-  };
-
-  // ✅ Remove item
+  // ================= REMOVE ITEM =================
   const removeItem = async (productId) => {
-    await api.delete(`/cart/remove/${productId}`);
+    const user = JSON.parse(localStorage.getItem("loggedUser"));
+
+    await api.delete(`/cart/remove/${user._id}/${productId}`);
+
     fetchCart();
-    window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  // ✅ Total
-  const totalAmount = cart.items.reduce(
+  // ================= TOTAL =================
+  const totalAmount = (cart.items || []).reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  // 💳 PAYMENT
-  const handlePayment = async () => {
-  console.log("Checkout clicked"); // 👈 ADD THIS
-
-  const loggedUser = JSON.parse(localStorage.getItem("loggedUser"));
-
-  if (!loggedUser) {
-    alert("Login required");
-    navigate("/login");
-    return;
-  }
-
-  if (!selectedItem) {
-    alert("No product selected");
-    return;
-  }
-
-  try {
-    const { data: order } = await api.post("/payment/create-order", {
-      amount: selectedItem.price
-    });
-
-    console.log("Order:", order); // 👈 DEBUG
-
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY,
-      amount: order.amount,
-      currency: "INR",
-      name: "MODARC",
-      description: selectedItem.name,
-      order_id: order.id,
-
-      handler: async function (response) {
-        console.log("Payment success:", response);
-
-        await api.post("/payment/verify", {
-          ...response,
-          userId: loggedUser._id,
-          products: [selectedItem],
-          amount: selectedItem.price
-        });
-
-        alert("Payment Successful 🎉");
-      }
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-
-  } catch (err) {
-    console.error("Payment error:", err);
-    alert("Payment failed");
-  }
-};
-  // 💰 Format price
   const formatRupee = (amount) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
+      currency: "INR"
     }).format(amount);
 
-  // ⏳ Loading
+  // ================= PAYMENT =================
+  const handlePayment = async () => {
+    const user = JSON.parse(localStorage.getItem("loggedUser"));
+
+    if (!user) {
+      alert("Login required");
+      navigate("/login");
+      return;
+    }
+
+    if (!cart.items.length) {
+      alert("Cart is empty");
+      return;
+    }
+
+    try {
+      const { data: order } = await api.post("/payment/create-order", {
+        amount: totalAmount
+      });
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY,
+        amount: order.amount,
+        currency: "INR",
+        name: "MODARC",
+        description: "Cart Payment",
+        order_id: order.id,
+
+        handler: async function (response) {
+          await api.post("/payment/verify", {
+            ...response,
+            userId: user._id,
+            products: cart.items,
+            amount: totalAmount
+          });
+
+          alert("Payment Successful 🎉");
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Payment failed");
+    }
+  };
+
+  // ================= UI STATES =================
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
@@ -138,37 +145,27 @@ const Cart = () => {
     );
   }
 
-  // 🪹 Empty cart
   if (!cart.items.length) {
     return (
       <Container sx={{ textAlign: "center", mt: 10 }}>
-        <ShoppingCartIcon sx={{ fontSize: 80, color: "#999" }} />
-        <Typography variant="h5" sx={{ mt: 2 }}>
-          Your cart is empty
-        </Typography>
+        <ShoppingCartIcon sx={{ fontSize: 80 }} />
+        <Typography variant="h5">Your cart is empty</Typography>
       </Container>
     );
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography variant="h4" fontWeight="800" sx={{ mb: 4 }}>
+      <Typography variant="h4" fontWeight="bold">
         Your Cart
       </Typography>
 
-      <Grid container spacing={4}>
-        {/* LEFT SIDE */}
+      <Grid container spacing={4} sx={{ mt: 2 }}>
+        {/* LEFT */}
         <Grid item xs={12} md={8}>
           <Stack spacing={3}>
             {cart.items.map((item) => (
-              <Card
-                key={item.productId}
-                sx={{
-                  display: "flex",
-                  borderRadius: 3,
-                  boxShadow: "0 5px 15px rgba(0,0,0,0.08)",
-                }}
-              >
+              <Card key={item.productId} sx={{ display: "flex" }}>
                 <CardMedia
                   component="img"
                   image={item.image}
@@ -176,17 +173,14 @@ const Cart = () => {
                 />
 
                 <CardContent sx={{ flex: 1 }}>
-                  <Typography variant="h6" fontWeight="600">
-                    {item.name}
-                  </Typography>
+                  <Typography>{item.name}</Typography>
 
-                  <Typography color="success.main" fontWeight="700">
+                  <Typography color="green">
                     {formatRupee(item.price)}
                   </Typography>
 
-                  {/* Quantity controls */}
-                  <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
-                    <IconButton onClick={() => decreaseQty(item.productId)}>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <IconButton>
                       <RemoveIcon />
                     </IconButton>
 
@@ -198,50 +192,35 @@ const Cart = () => {
                   </Box>
                 </CardContent>
 
-                {/* Delete */}
-                <Box sx={{ display: "flex", alignItems: "center", pr: 2 }}>
-                  <IconButton
-                    color="error"
-                    onClick={() => removeItem(item.productId)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
+                <IconButton
+                  color="error"
+                  onClick={() => removeItem(item.productId)}
+                >
+                  <DeleteIcon />
+                </IconButton>
               </Card>
             ))}
           </Stack>
         </Grid>
 
-        {/* RIGHT SIDE - SUMMARY */}
+        {/* RIGHT */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" fontWeight="700" gutterBottom>
-              Order Summary
-            </Typography>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6">Summary</Typography>
 
             <Divider sx={{ my: 2 }} />
 
             <Typography>
-              Items: {cart.items.length}
-            </Typography>
-
-            <Typography sx={{ mt: 1 }}>
               Total: <b>{formatRupee(totalAmount)}</b>
             </Typography>
 
             <Button
               fullWidth
               variant="contained"
-              sx={{
-                mt: 3,
-                bgcolor: "black",
-                "&:hover": { bgcolor: "#333" },
-                py: 1.5,
-                borderRadius: 2,
-              }}
+              sx={{ mt: 3, bgcolor: "black" }}
               onClick={handlePayment}
             >
-              Proceed to Pay
+              Pay Now
             </Button>
           </Card>
         </Grid>
