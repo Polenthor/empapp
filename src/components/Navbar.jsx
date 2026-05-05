@@ -176,7 +176,7 @@ const Navbar = () => {
 
                 {user && (
                   <Link to="/cart" style={{ textDecoration: "none" }}>
-                    <Button sx={{ color: "white" }} startIcon={ShoppingCartCheckout}>
+                    <Button sx={{ color: "white" }} startIcon={<ShoppingCartCheckout/>}>
                       
                     </Button>
                   </Link>
