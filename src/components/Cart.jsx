@@ -180,7 +180,7 @@ const Cart = () => {
                   </Typography>
 
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <IconButton>
+                    <IconButton onClick={() => removeItem(item)}>
                       <RemoveIcon />
                     </IconButton>
 
