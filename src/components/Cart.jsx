@@ -69,38 +69,58 @@ const Cart = () => {
 
   // 💳 PAYMENT
   const handlePayment = async () => {
-    try {
-      const res = await api.post("/payment/create-order", {
-        amount: totalAmount,
-      });
+  console.log("Checkout clicked"); // 👈 ADD THIS
 
-      const order = res.data;
+  const loggedUser = JSON.parse(localStorage.getItem("loggedUser"));
 
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY,
-        amount: order.amount,
-        currency: "INR",
-        name: "MODARC",
-        description: "Order Payment",
-        order_id: order.id,
+  if (!loggedUser) {
+    alert("Login required");
+    navigate("/login");
+    return;
+  }
 
-        handler: async function (response) {
-          await api.post("/payment/verify", response);
-          alert("Payment Successful 🎉");
-        },
+  if (!selectedItem) {
+    alert("No product selected");
+    return;
+  }
 
-        theme: { color: "#000" },
-      };
+  try {
+    const { data: order } = await api.post("/payment/create-order", {
+      amount: selectedItem.price
+    });
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+    console.log("Order:", order); // 👈 DEBUG
 
-    } catch (err) {
-      console.error(err);
-      alert("Payment failed");
-    }
-  };
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY,
+      amount: order.amount,
+      currency: "INR",
+      name: "MODARC",
+      description: selectedItem.name,
+      order_id: order.id,
 
+      handler: async function (response) {
+        console.log("Payment success:", response);
+
+        await api.post("/payment/verify", {
+          ...response,
+          userId: loggedUser._id,
+          products: [selectedItem],
+          amount: selectedItem.price
+        });
+
+        alert("Payment Successful 🎉");
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+
+  } catch (err) {
+    console.error("Payment error:", err);
+    alert("Payment failed");
+  }
+};
   // 💰 Format price
   const formatRupee = (amount) =>
     new Intl.NumberFormat("en-IN", {

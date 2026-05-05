@@ -220,7 +220,7 @@ const ImageD = () => {
                       startIcon={<ShoppingCartIcon />}
                       onClick={handleAddToCart}
                     >
-                      Add to Cart
+                      
                     </Button>
 
                     <Button
