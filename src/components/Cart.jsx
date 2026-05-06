@@ -32,7 +32,6 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("loggedUser"));
-
       if (!user) return;
 
       const res = await api.get(`/cart/${user._id}`);
@@ -55,12 +54,19 @@ const Cart = () => {
 
     await api.post("/cart/add", {
       userId: user._id,
-      product: {
-        productId: item.productId,
-        name: item.name,
-        price: item.price,
-        image: item.image
-      }
+      product: item
+    });
+
+    fetchCart();
+  };
+
+  // ================= DECREASE =================
+  const decreaseQty = async (productId) => {
+    const user = JSON.parse(localStorage.getItem("loggedUser"));
+
+    await api.post("/cart/decrease", {
+      userId: user._id,
+      productId
     });
 
     fetchCart();
@@ -71,7 +77,6 @@ const Cart = () => {
     const user = JSON.parse(localStorage.getItem("loggedUser"));
 
     await api.delete(`/cart/remove/${user._id}/${productId}`);
-
     fetchCart();
   };
 
@@ -102,11 +107,19 @@ const Cart = () => {
       return;
     }
 
+    // 🔥 IMPORTANT FIX
+    if (!window.Razorpay) {
+      alert("Payment SDK not loaded. Refresh page.");
+      return;
+    }
+
     try {
+      // 1️⃣ create order
       const { data: order } = await api.post("/payment/create-order", {
         amount: totalAmount
       });
 
+      // 2️⃣ payment options
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY,
         amount: order.amount,
@@ -124,6 +137,25 @@ const Cart = () => {
           });
 
           alert("Payment Successful 🎉");
+
+          // 🔥 clear cart UI after payment
+          setCart({ items: [] });
+        },
+
+        prefill: {
+          name: user.Username
+        },
+
+        theme: {
+          color: "#000"
+        },
+
+        // ✅ ENABLE UPI + ALL METHODS
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true
         }
       };
 
@@ -168,7 +200,7 @@ const Cart = () => {
               <Card key={item.productId} sx={{ display: "flex" }}>
                 <CardMedia
                   component="img"
-                  image={item.image}
+                  image={item.image || "https://via.placeholder.com/150"}
                   sx={{ width: 140 }}
                 />
 
@@ -180,7 +212,8 @@ const Cart = () => {
                   </Typography>
 
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <IconButton onClick={() => removeItem(item)}>
+                    {/* 🔥 FIXED */}
+                    <IconButton onClick={() => decreaseQty(item.productId)}>
                       <RemoveIcon />
                     </IconButton>
 
@@ -220,7 +253,7 @@ const Cart = () => {
               sx={{ mt: 3, bgcolor: "black" }}
               onClick={handlePayment}
             >
-              Pay Now
+              Pay Now 💳
             </Button>
           </Card>
         </Grid>
