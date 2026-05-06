@@ -53,7 +53,7 @@ const Home = () => {
             </MenuItem>
 
             <MenuItem onClick={closeMenu}>
-              <Link to="/collection" style={{ textDecoration: "none", color: "black" }}>
+              <Link to="/imgd" style={{ textDecoration: "none", color: "black" }}>
                 Collection
               </Link>
             </MenuItem>

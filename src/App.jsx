@@ -14,6 +14,10 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Upload from './components/Upload'
 import ImageD from './components/ImageD'
 import Cart from './components/Cart'
+import About from './components/About'
+import Categories from './components/Categories'
+import Contact from './components/Contact'
+import AdminMessages from './components/AdminMessages'
 
 
 function App() {
@@ -62,6 +66,10 @@ function App() {
         <Route path='/upload' element={<Upload />} />
         <Route path='/imgd' element={<ImageD />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/about" element={<About/>} />
+        <Route path="/categories" element={<Categories />} />
+        <Route path="/contact" element={<Contact/>} />
+        <Route path="/admin/messages" element={<AdminMessages />} />
 
 
       </Routes>
